@@ -7,6 +7,7 @@ import Link from "next/link";
 import { HiChevronLeft } from "react-icons/hi";
 import Avatar from "@/app/components/Avatar";
 import { HiEllipsisHorizontal } from "react-icons/hi2";
+import { getPresenceStatus, usePresenceMap } from "@/app/hooks/usePresence";
 
 interface HeaderProps {
     conversation: Conversation & {
@@ -16,14 +17,31 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ conversation }) => {
     const otherUser = useOtherUser(conversation);
+    const presenceMap = usePresenceMap();
 
     const statusText = useMemo(() => {
         if (conversation.isGroup) {
-            return `${conversation.users.length} members`;
+            const onlineCount = conversation.users.filter(
+                (user) => getPresenceStatus(presenceMap, user.email) === "online",
+            ).length;
+
+            return onlineCount > 0
+                ? `${conversation.users.length} members, ${onlineCount} online`
+                : `${conversation.users.length} members`;
         }
 
-        return "Active";
-    }, [conversation]);
+        const status = getPresenceStatus(presenceMap, otherUser[0]?.email);
+
+        if (status === "online") {
+            return "Active now";
+        }
+
+        if (status === "away") {
+            return "Away";
+        }
+
+        return "Offline";
+    }, [conversation, otherUser, presenceMap]);
 
     return (
         <>

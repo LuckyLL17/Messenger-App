@@ -1,7 +1,7 @@
 import PusherServer from "pusher";
 import PusherClient from "pusher-js";
 
-const pusherConfigured = Boolean(
+export const pusherConfigured = Boolean(
   process.env.PUSHER_APP_ID &&
     process.env.PUSHER_SECRET &&
     process.env.NEXT_PUBLIC_PUSHER_APP_KEY

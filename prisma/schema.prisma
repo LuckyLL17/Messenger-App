@@ -23,14 +23,36 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // Cached presence state, kept in sync by the presence service.
+  // "online" | "away" | "offline"
+  presenceStatus String?
+  lastSeenAt     DateTime?
+
   conversationIds String[]       @db.ObjectId
   conversations   Conversation[] @relation(fields: [conversationIds], references: [id])
 
   seenMessageIds String[]  @db.ObjectId
   seenMessage    Message[] @relation("Seen", fields: [seenMessageIds], references: [id])
 
-  accounts Account[]
-  messages Message[]
+  accounts  Account[]
+  messages  Message[]
+  presences Presence[]
+}
+
+// One row per connected device/tab. Rows are refreshed by client heartbeats
+// and considered expired once lastSeenAt falls outside the presence TTL.
+model Presence {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  deviceId   String
+  // "active" | "away"
+  state      String
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([lastSeenAt])
 }
 
 model Account {
