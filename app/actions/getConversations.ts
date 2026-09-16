@@ -29,7 +29,31 @@ const getConversations = async () => {
       },
     });
 
-    return conversations;
+    // 未读/提及计数直接从消息的 seenIds 派生，保证与实际已读记录一致
+    return conversations.map((conversation) => {
+      let unreadCount = 0;
+      let mentionCount = 0;
+
+      conversation.messages.forEach((message) => {
+        if (message.senderId === currentUser.id) {
+          return;
+        }
+        if (message.seenIds.includes(currentUser.id)) {
+          return;
+        }
+
+        unreadCount += 1;
+        if (message.mentionedIds?.includes(currentUser.id)) {
+          mentionCount += 1;
+        }
+      });
+
+      return {
+        ...conversation,
+        unreadCount,
+        mentionCount,
+      };
+    });
   } catch (error) {
     return [];
   }

@@ -13,9 +13,11 @@ import { FullConversationType } from "@/app/types";
 interface ConversationBoxProps {
     data: FullConversationType;
     selected?: boolean;
+    unreadCount?: number;
+    mentionCount?: number;
 }
 
-export const ConversationBox = ({ data, selected }: ConversationBoxProps) => {
+export const ConversationBox = ({ data, selected, unreadCount = 0, mentionCount = 0 }: ConversationBoxProps) => {
     const otherUser = useOtherUser(data);
     const session = useSession();
     const router = useRouter();
@@ -93,17 +95,34 @@ export const ConversationBox = ({ data, selected }: ConversationBoxProps) => {
                             </p>
                         )}
                     </div>
-                    <p
-                        className={clsx(
-                            `
-              truncate 
+                    <div className="flex items-center justify-between gap-2">
+                        <p
+                            className={clsx(
+                                `
+              truncate
               text-sm
               `,
-                            hasSeen ? "text-gray-500" : "text-black font-medium"
-                        )}
-                    >
-                        {lastMessageText}
-                    </p>
+                                hasSeen ? "text-gray-500" : "text-black font-medium"
+                            )}
+                        >
+                            {lastMessageText}
+                        </p>
+                        <div className="flex items-center gap-1 shrink-0">
+                            {mentionCount > 0 && (
+                                <span
+                                    className="flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-xs font-semibold"
+                                    title={`${mentionCount} 条消息提到了你`}
+                                >
+                                    @{mentionCount > 99 ? "99+" : mentionCount}
+                                </span>
+                            )}
+                            {unreadCount > 0 && (
+                                <span className="flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-violet-500 text-white text-xs font-semibold">
+                                    {unreadCount > 99 ? "99+" : unreadCount}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

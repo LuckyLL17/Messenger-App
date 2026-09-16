@@ -8,4 +8,13 @@ export type FullMessageType = Message & {
 export type FullConversationType = Conversation & {
   users: User[];
   messages: FullMessageType[];
+  unreadCount?: number;
+  mentionCount?: number;
+};
+
+export type ConversationUpdatePayload = {
+  id: string;
+  messages: FullMessageType[];
+  unreadCount?: number;
+  mentionCount?: number;
 };

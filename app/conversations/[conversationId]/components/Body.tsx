@@ -1,7 +1,7 @@
 "use client";
 
 import { FullMessageType } from "@/app/types";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import MessageBox from "./MessageBox";
 import useConversation from "@/app/hooks/useConversation";
 import { pusherClient } from "@/app/libs/pusher";
@@ -15,25 +15,61 @@ interface BodyProps {
 const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
     const [messages, setMessages] = useState(initialMessages);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const messagesRef = useRef<FullMessageType[]>(initialMessages);
     const { conversationId } = useConversation();
 
     useEffect(() => {
-        axios.post(`/api/conversations/${conversationId}/seen`);
+        messagesRef.current = messages;
+    }, [messages]);
+
+    // 只有标签页可见（用户真正在看）时才上报已读，
+    // 并带上本次渲染到的最后一条消息，服务端只清除到该消息为止。
+    const markSeen = useCallback((lastMessageId?: string) => {
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+            return;
+        }
+
+        const seenUpTo =
+            lastMessageId ??
+            messagesRef.current[messagesRef.current.length - 1]?.id;
+
+        axios.post(`/api/conversations/${conversationId}/seen`, {
+            lastMessageId: seenUpTo,
+        });
     }, [conversationId]);
+
+    useEffect(() => {
+        markSeen();
+
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                markSeen();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("focus", handleVisibility);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("focus", handleVisibility);
+        };
+    }, [conversationId, markSeen]);
 
     useEffect(() => {
         pusherClient.subscribe(conversationId);
         bottomRef?.current?.scrollIntoView();
 
         const messageHandler = (message: FullMessageType) => {
-            axios.post(`/api/conversations/${conversationId}/seen`);
-
             setMessages((current) => {
                 if (find(current, { id: message.id })) {
                     return current;
                 }
                 return [...current, message];
             });
+
+            // 标签页不可见时 markSeen 会直接返回，新消息保持未读并计入未读数
+            markSeen(message.id);
             bottomRef?.current?.scrollIntoView();
         };
 
@@ -54,7 +90,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
             pusherClient.unbind("messages:new", messageHandler);
             pusherClient.unbind("message:update", updateMessageHandler);
         };
-    }, [conversationId]);
+    }, [conversationId, markSeen]);
 
     return (
         <div className="flex-1 overflow-y-auto bg-neutral-100">

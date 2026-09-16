@@ -19,6 +19,7 @@ export const pusherServer = pusherConfigured
     })
   : ({
       trigger: async () => undefined,
+      triggerBatch: async () => undefined,
       authorizeChannel: () => ({ auth: "" }),
     } as unknown as PusherServer);
 
