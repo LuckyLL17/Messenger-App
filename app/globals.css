@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+html,
+body,
+:root {
+  height: 100%;
+}
