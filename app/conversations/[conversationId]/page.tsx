@@ -9,8 +9,19 @@ interface IParams {
     conversationId: string;
 }
 
-const ConversationId = async ({ params }: { params: Promise<IParams> }) => {
+interface SearchParams {
+    message?: string;
+}
+
+const ConversationId = async ({
+    params,
+    searchParams,
+}: {
+    params: Promise<IParams>;
+    searchParams: Promise<SearchParams>;
+}) => {
     const { conversationId } = await params;
+    const { message } = await searchParams;
     const conversation = await getConversationById(conversationId);
     const messages = await getMessages(conversationId);
 
@@ -28,7 +39,10 @@ const ConversationId = async ({ params }: { params: Promise<IParams> }) => {
         <div className="lg:pl-80 h-full">
             <div className="h-full flex flex-col">
                 <Header conversation={conversation} />
-                <Body initialMessages={messages} />
+                <Body
+                    initialMessages={messages}
+                    highlightMessageId={message}
+                />
                 <Form />
             </div>
         </div>

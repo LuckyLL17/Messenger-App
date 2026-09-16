@@ -4,7 +4,7 @@ import { User } from "@prisma/client"
 import Image from "next/image"
 
 interface AvatarProps {
-    user?: User
+    user?: Pick<User, "id" | "name" | "image"> | null;
 }
 
 const Avatar = ({ user }: AvatarProps) => {

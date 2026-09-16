@@ -10,9 +10,10 @@ import Image from "next/image";
 interface MessageBoxProps {
     data: FullMessageType;
     isLast?: boolean;
+    isHighlighted?: boolean;
 }
 
-const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
+const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast, isHighlighted }) => {
     const session = useSession();
     const isOwn = session?.data?.user?.email === data?.sender?.email;
     const seenList = (data.seen || [])
@@ -20,13 +21,20 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
         .map((user) => user.name)
         .join(", ");
 
-    const container = clsx("flex gap-3 p-4", isOwn && "justify-end");
+    const container = clsx(
+        "flex gap-3 p-4 rounded-lg",
+        isOwn && "justify-end",
+        isHighlighted && "search-highlight-flash",
+    );
     const avatar = clsx(isOwn && "order-2");
     const body = clsx("flex flex-col gap-2", isOwn && "items-end");
     const message = clsx(
         "text-sm w-fit overflow-hidden",
         isOwn ? "bg-violet-500 text-white shadow-sm" : "bg-gray-100 shadow-sm",
-        data.image ? "rounded-md p-0" : "rounded-full py-2 px-3"
+        data.image ? "rounded-md p-0" : "rounded-full py-2 px-3",
+        // Keyed so the ring animation restarts even when the user jumps
+        // between two different search hits without a full page transition.
+        isHighlighted && "ring-2 ring-yellow-400 ring-offset-2",
     );
 
     return (
