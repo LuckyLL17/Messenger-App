@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/app/libs/pusher";
-import getCurrentUser from "@/app/actions/getCurrentUser";
+import {
+  accessDeniedResponse,
+  authorizePusherChannel,
+} from "@/app/actions/conversationAccess";
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentUser();
-
-  if (!currentUser?.email) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
   const body = await request.text();
   const searchParams = new URLSearchParams(body);
   const socketId = searchParams.get("socket_id");
@@ -20,10 +17,15 @@ export async function POST(request: Request) {
     });
   }
 
-  const data = {
-    user_id: currentUser.email,
-  };
+  // 统一鉴权：个人通知频道仅本人可订阅；会话频道仅成员可订阅（单聊/群聊相同）。
+  const access = await authorizePusherChannel(channel);
 
-  const authResponse = pusherServer.authorizeChannel(socketId, channel, data);
+  if (access.status !== "authenticated") {
+    return accessDeniedResponse(access.status);
+  }
+
+  const authResponse = pusherServer.authorizeChannel(socketId, channel, {
+    user_id: access.currentUser.email!,
+  });
   return NextResponse.json(authResponse);
 }

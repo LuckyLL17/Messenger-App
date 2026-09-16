@@ -1,17 +1,28 @@
 import { NextResponse } from "next/server";
-import getCurrentUser from "@/app/actions/getCurrentUser";
 import prisma from "@/app/libs/prismadb";
 import { pusherServer } from "@/app/libs/pusher";
+import {
+  accessDeniedResponse,
+  authorizeConversationAccess,
+  conversationUsersInclude,
+} from "@/app/actions/conversationAccess";
 
 export async function POST(request: Request) {
   try {
-    const currentUser = await getCurrentUser();
     const body = await request.json();
     const { message, image, conversationId } = body;
 
-    if (!currentUser?.id || !currentUser?.email) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // 统一鉴权：必须是该会话成员才能向其发送消息（单聊/群聊相同）。
+    const access = await authorizeConversationAccess(
+      conversationId,
+      conversationUsersInclude,
+    );
+
+    if (access.status !== "authenticated") {
+      return accessDeniedResponse(access.status);
     }
+
+    const { currentUser } = access;
 
     const newMessage = await prisma.message.create({
       include: {

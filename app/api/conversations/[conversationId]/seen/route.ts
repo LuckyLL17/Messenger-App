@@ -1,37 +1,31 @@
 import { NextResponse } from "next/server";
-import getCurrentUser from "@/app/actions/getCurrentUser";
 import prisma from "@/app/libs/prismadb";
 import { pusherServer } from "@/app/libs/pusher";
+import {
+  accessDeniedResponse,
+  authorizeConversationAccess,
+  conversationSeenInclude,
+} from "@/app/actions/conversationAccess";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
   try {
-    const currentUser = await getCurrentUser();
     const { conversationId } = await params;
 
-    if (!currentUser?.id || !currentUser?.email) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // 统一鉴权：仅会话成员可提交已读回执（单聊/群聊相同）。
+    // 授权同时返回带 messages/seen/users 的会话，无需再次查询。
+    const access = await authorizeConversationAccess(
+      conversationId,
+      conversationSeenInclude,
+    );
+
+    if (access.status !== "authenticated") {
+      return accessDeniedResponse(access.status);
     }
 
-    const conversation = await prisma.conversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      include: {
-        messages: {
-          include: {
-            seen: true,
-          },
-        },
-        users: true,
-      },
-    });
-
-    if (!conversation) {
-      return new NextResponse("Invalid ID", { status: 400 });
-    }
+    const { currentUser, data: conversation } = access;
 
     const lastMessage = conversation.messages[conversation.messages.length - 1];
 
@@ -56,7 +50,7 @@ export async function POST(
       },
     });
 
-    await pusherServer.trigger(currentUser.email, "conversation:update", {
+    await pusherServer.trigger(currentUser.email!, "conversation:update", {
       id: conversationId,
       messages: [updatedMessage],
     });
