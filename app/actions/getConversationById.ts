@@ -18,6 +18,10 @@ const getConversationById = async (conversationId: string) => {
       },
     });
 
+    if (!conversation || !conversation.userIds.includes(currentUser.id)) {
+      return null;
+    }
+
     return conversation;
   } catch (error: any) {
     console.log(error, "SERVER_ERROR");

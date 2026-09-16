@@ -13,6 +13,19 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const conversation = await prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      select: {
+        userIds: true,
+      },
+    });
+
+    if (!conversation || !conversation.userIds.includes(currentUser.id)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+
     const newMessage = await prisma.message.create({
       include: {
         seen: true,

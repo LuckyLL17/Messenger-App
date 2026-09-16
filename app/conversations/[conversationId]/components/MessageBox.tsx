@@ -20,6 +20,16 @@ const MessageBox: React.FC<MessageBoxProps> = ({ data, isLast }) => {
         .map((user) => user.name)
         .join(", ");
 
+    if (data.isSystem) {
+        return (
+            <div className="flex justify-center px-4 py-2">
+                <div className="text-xs font-light text-gray-400 text-center">
+                    {data.body}
+                </div>
+            </div>
+        );
+    }
+
     const container = clsx("flex gap-3 p-4", isOwn && "justify-end");
     const avatar = clsx(isOwn && "order-2");
     const body = clsx("flex flex-col gap-2", isOwn && "items-end");

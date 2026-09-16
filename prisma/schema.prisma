@@ -31,6 +31,10 @@ model User {
 
   accounts Account[]
   messages Message[]
+
+  ownedConversations Conversation[]            @relation("ConversationOwner")
+  memberEvents       ConversationMemberEvent[] @relation("MemberEventActor")
+  memberEventTargets ConversationMemberEvent[] @relation("MemberEventTarget")
 }
 
 model Account {
@@ -59,17 +63,23 @@ model Conversation {
   name          String?
   isGroup       Boolean?
 
+  ownerId String? @db.ObjectId
+  owner   User?   @relation("ConversationOwner", fields: [ownerId], references: [id])
+
   messagesIds String[]  @db.ObjectId
   messages    Message[]
 
   userIds String[] @db.ObjectId
   users   User[]   @relation(fields: [userIds], references: [id])
+
+  memberEvents ConversationMemberEvent[]
 }
 
 model Message {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   body      String?
   image     String?
+  isSystem  Boolean  @default(false)
   createdAt DateTime @default(now())
 
   seenIds String[] @db.ObjectId
@@ -80,4 +90,19 @@ model Message {
 
   senderId String @db.ObjectId
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model ConversationMemberEvent {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String // MEMBER_ADDED | MEMBER_REMOVED | MEMBER_LEFT | OWNER_TRANSFERRED
+  createdAt DateTime @default(now())
+
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  actorId String @db.ObjectId
+  actor   User   @relation("MemberEventActor", fields: [actorId], references: [id])
+
+  targetId String? @db.ObjectId
+  target   User?   @relation("MemberEventTarget", fields: [targetId], references: [id])
 }

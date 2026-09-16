@@ -2,31 +2,69 @@
 
 import useOtherUser from "@/app/hooks/useOtherUser";
 import { Conversation, User } from "@prisma/client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { HiChevronLeft } from "react-icons/hi";
 import Avatar from "@/app/components/Avatar";
+import AvatarGroup from "@/app/components/AvatarGroup";
 import { HiEllipsisHorizontal } from "react-icons/hi2";
+import { pusherClient } from "@/app/libs/pusher";
+import { FullConversationType } from "@/app/types";
+import ProfileDrawer from "./ProfileDrawer";
 
 interface HeaderProps {
     conversation: Conversation & {
         users: User[];
     };
+    users: User[];
 }
 
-const Header: React.FC<HeaderProps> = ({ conversation }) => {
-    const otherUser = useOtherUser(conversation);
+const Header: React.FC<HeaderProps> = ({ conversation, users }) => {
+    const [conversationData, setConversationData] = useState(conversation);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const otherUser = useOtherUser(conversationData);
+
+    useEffect(() => {
+        setConversationData(conversation);
+    }, [conversation]);
+
+    useEffect(() => {
+        const updateHandler = (newData: FullConversationType) => {
+            if (newData.id === conversation.id) {
+                setConversationData((current) => ({
+                    ...current,
+                    ...newData,
+                }));
+            }
+        };
+
+        pusherClient.subscribe(conversation.id);
+        pusherClient.bind("conversation:update", updateHandler);
+
+        return () => {
+            pusherClient.unbind("conversation:update", updateHandler);
+        };
+    }, [conversation.id]);
 
     const statusText = useMemo(() => {
-        if (conversation.isGroup) {
-            return `${conversation.users.length} members`;
+        if (conversationData.isGroup) {
+            return `${conversationData.users.length} members`;
         }
 
         return "Active";
-    }, [conversation]);
+    }, [conversationData]);
+
+    const title = conversationData.name || otherUser.map((user) => user.name).join(", ");
 
     return (
         <>
+            <ProfileDrawer
+                conversation={conversationData}
+                users={users}
+                isOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+            />
             <div className="bg-white w-full flex border-b-[1px] sm:px-4 py-3 px-4 lg:px-6 justify-between items-center shadow-sm">
                 <div className="flex gap-3 items-center">
                     <Link
@@ -35,9 +73,13 @@ const Header: React.FC<HeaderProps> = ({ conversation }) => {
                     >
                         <HiChevronLeft size={32} />
                     </Link>
-                    <Avatar user={otherUser[0]} />
+                    {conversationData.isGroup ? (
+                        <AvatarGroup users={conversationData.users} />
+                    ) : (
+                        <Avatar user={otherUser[0]} />
+                    )}
                     <div className="flex flex-col">
-                        <div>{conversation.name || otherUser[0]?.name}</div>
+                        <div>{title}</div>
                         <div className="text-sm font-light text-neutral-500">
                             {statusText}
                         </div>
@@ -45,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({ conversation }) => {
                 </div>
                 <HiEllipsisHorizontal
                     size={32}
-                    onClick={() => { }}
+                    onClick={() => setDrawerOpen(true)}
                     className="text-violet-500 cursor-pointer hover:text-violet-600 transition"
                 />
             </div>

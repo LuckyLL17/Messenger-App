@@ -1,5 +1,6 @@
 import getConversationById from "@/app/actions/getConversationById";
 import getMessages from "@/app/actions/getMessages";
+import getUsers from "@/app/actions/getUsers";
 import EmptyState from "@/app/components/EmptyState";
 import Header from "./components/Header";
 import Body from "./components/Body";
@@ -13,6 +14,7 @@ const ConversationId = async ({ params }: { params: Promise<IParams> }) => {
     const { conversationId } = await params;
     const conversation = await getConversationById(conversationId);
     const messages = await getMessages(conversationId);
+    const users = await getUsers();
 
     if (!conversation) {
         return (
@@ -27,7 +29,7 @@ const ConversationId = async ({ params }: { params: Promise<IParams> }) => {
     return (
         <div className="lg:pl-80 h-full">
             <div className="h-full flex flex-col">
-                <Header conversation={conversation} />
+                <Header conversation={conversation} users={users} />
                 <Body initialMessages={messages} />
                 <Form />
             </div>

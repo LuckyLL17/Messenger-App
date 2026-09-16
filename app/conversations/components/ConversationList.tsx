@@ -53,7 +53,7 @@ const ConversationList = ({ initialItems, users }: ConversationListProps) => {
                 if (currentConversation.id === conversation.id) {
                     return {
                         ...currentConversation,
-                        messages: conversation.messages
+                        ...conversation
                     };
                 }
 
