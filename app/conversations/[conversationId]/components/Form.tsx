@@ -9,6 +9,7 @@ import useConversation from "@/app/hooks/useConversation";
 
 const Form = () => {
     const { conversationId } = useConversation();
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
     const {
         register,
@@ -38,13 +39,15 @@ const Form = () => {
 
     return (
         <div className="py-4 px-4 bg-white border-t flex items-center gap-2 lg:gap-4 w-full">
-            <CldUploadButton
-                options={{ maxFiles: 1 }}
-                onSuccess={handleUpload}
-                uploadPreset="messenger_clone"
-            >
-                <HiPhoto size={30} className="text-violet-500 cursor-pointer hover:text-violet-600 transition" />
-            </CldUploadButton>
+            {cloudName && (
+                <CldUploadButton
+                    options={{ maxFiles: 1 }}
+                    onSuccess={handleUpload}
+                    uploadPreset="messenger_clone"
+                >
+                    <HiPhoto size={30} className="text-violet-500 cursor-pointer hover:text-violet-600 transition" />
+                </CldUploadButton>
+            )}
             <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="flex items-center gap-2 lg:gap-4 w-full"
