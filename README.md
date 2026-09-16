@@ -40,6 +40,9 @@ messenger-app/
 │   │   ├── components/   # Chat-specific components (ConversationList, GroupChatModal, ConversationBox)
 │   │   └── layout.tsx    # Renders the sidebar holding the ConversationList and Active Status
 │   │
+│   ├── search/           # Cross-conversation message search (keyword + sender filters)
+│   │   └── components/   # SearchView, grouped result rows and snippet/highlight helpers
+│   │
 │   └── users/            # The "People" module listing available users to start chats with
 │
 └── prisma/
@@ -96,3 +99,16 @@ In `app/types/index.ts`, custom types like `FullMessageType` and `FullConversati
 ### Optimistic UI
 
 For the `GroupChatModal`, we process the form state using `react-hook-form` and overlay generic flexible components like `<Modal />` and `<Select />`. The forms manage active submission states (`isLoading`) to disable inputs instantly providing better UX before resolving network callbacks.
+
+---
+
+## 🔍 Cross-Conversation Search
+
+The sidebar's magnifying-glass entry opens `/search`, where users search every conversation they participate in by message keyword and/or sender.
+
+- **API**: `GET /api/search?keyword=&senderId=&page=` — scopes results to the caller's own conversations via `app/actions` data, performs a case-insensitive `contains` match on text messages, and surfaces image messages (which have no searchable body) when filtering by sender. Results are returned **grouped by conversation** with `total` / `hasMore` metadata.
+- **Bounded loading**: only the first page (`SEARCH_PAGE_SIZE = 20`) of matches is queried at a time; the UI shows how many of the total matches are currently displayed and exposes a "load next batch" button that merges and de-duplicates groups.
+- **Feedback states**: idle guidance, keyword-too-short (minimum 2 chars, validated before any request), no-results, loading, and error states are all rendered explicitly. The same guards are enforced server-side (`400 KEYWORD_TOO_SHORT` / `MISSING_FILTERS`, `401` when unauthenticated).
+- **Snippets**: text hits render a context excerpt around the first match with the matched characters highlighted (`app/search/components/snippet.ts`); image hits render a `[图片消息] / image message` placeholder.
+- **Deep linking & highlight**: clicking a result navigates to `/conversations/[conversationId]?message=[messageId]`. The conversation `Body` registers message refs, scrolls the target into the center of view, suppresses the default scroll-to-bottom for that load, and `MessageBox` flashes a yellow ring/background animation (`search-highlight-flash` in `globals.css`).
+
