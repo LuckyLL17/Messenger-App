@@ -17,6 +17,11 @@ export async function POST(request: Request) {
       include: {
         seen: true,
         sender: true,
+        reactions: {
+          include: {
+            user: true,
+          },
+        },
       },
       data: {
         body: message,

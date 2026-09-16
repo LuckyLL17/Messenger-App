@@ -29,8 +29,9 @@ model User {
   seenMessageIds String[]  @db.ObjectId
   seenMessage    Message[] @relation("Seen", fields: [seenMessageIds], references: [id])
 
-  accounts Account[]
-  messages Message[]
+  accounts  Account[]
+  messages  Message[]
+  reactions Reaction[]
 }
 
 model Account {
@@ -80,4 +81,20 @@ model Message {
 
   senderId String @db.ObjectId
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  reactions Reaction[]
+}
+
+model Reaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  emoji     String
+  createdAt DateTime @default(now())
+
+  messageId String  @db.ObjectId
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
 }

@@ -17,6 +17,15 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
     const { conversationId } = useConversation();
 
+    const updateMessage = (newMessage: FullMessageType) => {
+        setMessages((current) => current.map((currentMessage) => {
+            if (currentMessage.id === newMessage.id) {
+                return newMessage;
+            }
+            return currentMessage;
+        }));
+    };
+
     useEffect(() => {
         axios.post(`/api/conversations/${conversationId}/seen`);
     }, [conversationId]);
@@ -38,12 +47,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
         };
 
         const updateMessageHandler = (newMessage: FullMessageType) => {
-            setMessages((current) => current.map((currentMessage) => {
-                if (currentMessage.id === newMessage.id) {
-                    return newMessage;
-                }
-                return currentMessage;
-            }));
+            updateMessage(newMessage);
         };
 
         pusherClient.bind("messages:new", messageHandler);
@@ -63,6 +67,7 @@ const Body: React.FC<BodyProps> = ({ initialMessages = [] }) => {
                     isLast={i === messages.length - 1}
                     key={message.id}
                     data={message}
+                    onUpdate={updateMessage}
                 />
             ))}
             <div className="pt-24" ref={bottomRef} />
